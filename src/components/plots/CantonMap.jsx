@@ -20,8 +20,8 @@ const CANTON_BOUNDS = {
   "Fribourg": [[6.74, 46.44], [7.39, 47.01]],
   "Solothurn": [[7.34, 47.07], [7.95, 47.5]],
   "Graubunden": [[8.65, 46.17], [10.49, 47.07]],
-  "Thurgau": [[8.63, 47.37], [9.4, 47.7]],
-  "Schaffhausen": [[8.4, 47.65], [8.87, 47.82]],
+  "Thurgau": [[8.63, 47.37], [9.47, 47.7]],
+  "Schaffhausen": [[8.4, 47.65], [8.87, 47.8]],
   "Neuchatel": [[6.44, 46.82], [7.07, 47.14]],
   "Schwyz": [[8.42, 46.88], [9.0, 47.23]],
   "Zug": [[8.36, 47.05], [8.62, 47.27]],
@@ -30,14 +30,14 @@ const CANTON_BOUNDS = {
   "Nidwalden": [[8.2, 46.77], [8.57, 47.0]],
   "Obwalden": [[8.02, 46.72], [8.42, 47.0]],
   "Uri": [[8.38, 46.41], [8.93, 46.99]],
-  "AppenzellAusserrhoden": [[9.19, 47.3], [9.61, 47.48]],
-  "AppenzellInnerrhoden": [[9.35, 47.24], [9.51, 47.37]],
+  "AppenzellAusserrhoden": [[9.19, 47.25], [9.61, 47.48]],
+  "AppenzellInnerrhoden": [[9.35, 47.24], [9.51, 47.5]],
 };
 
 const CantonMap = ({ sidebarCollapsed, isExpanded = false }) => {
   const mapContainer = useRef(null);
   const map = useRef(null);
-  const { selectedCanton } = useDashboard();
+  const { selectedCanton, setSelectedCanton } = useDashboard();
   const initialCantonRef = useRef(selectedCanton); // Store initial canton on mount
 
   // Trigger map resize when sidebar collapses/expands
@@ -121,6 +121,25 @@ const CantonMap = ({ sidebarCollapsed, isExpanded = false }) => {
         });
         map.current.setFilter('canton-highlight', ['==', 'NAME', initCanton]);
       }
+
+      // Add click handler for canton selection
+      map.current.on('click', 'canton-fills', (e) => {
+        if (e.features && e.features.length > 0) {
+          const cantonName = e.features[0].properties.NAME;
+          if (cantonName && CANTON_BOUNDS[cantonName]) {
+            setSelectedCanton(cantonName);
+          }
+        }
+      });
+
+      // Change cursor on hover
+      map.current.on('mouseenter', 'canton-fills', () => {
+        map.current.getCanvas().style.cursor = 'pointer';
+      });
+
+      map.current.on('mouseleave', 'canton-fills', () => {
+        map.current.getCanvas().style.cursor = '';
+      });
     });
   }, []);
 
