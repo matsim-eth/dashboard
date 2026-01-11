@@ -7,6 +7,33 @@
   height: calc(100vh - 60px); /* Account for controls bar */
 }
 
+/* 2x2 grid for PT Subscription and Car Availability */
+.plot-grid-2x2 {
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+}
+
+/* Layout for two plots with map: map on left, 2 plots stacked on right */
+.plot-grid-two-plots {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  grid-template-areas:
+    "map top"
+    "map bottom";
+}
+
+/* Persistent map styling - hides/shows without remounting */
+.persistent-map {
+  /* In 3x2 grid, map takes first position */
+  grid-row: 1 / 2;
+  grid-column: 1 / 2;
+}
+
+.persistent-map-two-plots {
+  /* In two-plot grid, uses grid area */
+  grid-area: map;
+}
+
 .plot-card {
   background-color: #ffffff;
   border-radius: 12px;

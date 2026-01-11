@@ -7,12 +7,18 @@ export const DashboardProvider = ({ children }) => {
   const [distanceType, setDistanceType] = useState("euclidean"); // "euclidean" or "network"
   const [selectedMode, setSelectedMode] = useState("all"); // "all", "bike", "car", "car_passenger", "pt", "walk"
   const [selectedPurpose, setSelectedPurpose] = useState("all"); // "all", "education", "work", "leisure", "shopping", "business", "escort"
+  const [selectedGender, setSelectedGender] = useState("male"); // "male", "female"
+  const [selectedIncome, setSelectedIncome] = useState("1"); // "1", "2", ..., "8"
+  const [selectedAge, setSelectedAge] = useState("[6, 15)"); // "[6, 15)", "[15, 18)", "[18, 24)", "[24, 30)", "[30, 45)", "[45, 65)"
 
   const value = {
     selectedCanton, setSelectedCanton,
     distanceType, setDistanceType,
     selectedMode, setSelectedMode,
     selectedPurpose, setSelectedPurpose,
+    selectedGender, setSelectedGender,
+    selectedIncome, setSelectedIncome,
+    selectedAge, setSelectedAge,
   };
 
   return (

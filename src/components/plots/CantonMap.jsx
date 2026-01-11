@@ -24,7 +24,7 @@ const CANTON_BOUNDS = {
   "Schaffhausen": [[8.4, 47.65], [8.87, 47.8]],
   "Neuchatel": [[6.44, 46.82], [7.07, 47.14]],
   "Schwyz": [[8.42, 46.88], [9.0, 47.23]],
-  "Zug": [[8.36, 47.05], [8.62, 47.27]],
+  "Zug": [[8.4, 47.05], [8.65, 47.27]],
   "Glarus": [[8.76, 46.79], [9.23, 47.17]],
   "Jura": [[6.84, 47.14], [7.56, 47.51]],
   "Nidwalden": [[8.2, 46.77], [8.57, 47.0]],
@@ -48,6 +48,30 @@ const CantonMap = ({ sidebarCollapsed, isExpanded = false }) => {
     }, 100);
     return () => clearTimeout(timer);
   }, [sidebarCollapsed]);
+
+  // Trigger map resize when container size changes (e.g., switching between tabs with different layouts)
+  useEffect(() => {
+    if (!map.current || !mapContainer.current) return;
+
+    const resizeObserver = new ResizeObserver(() => {
+      if (map.current && map.current.isStyleLoaded()) {
+        map.current.resize();
+        
+        // Re-fit bounds after resize to adjust padding for new container size
+        const bounds = CANTON_BOUNDS[selectedCanton] || CANTON_BOUNDS["All"];
+        map.current.fitBounds(bounds, {
+          padding: isExpanded ? 50 : 20,
+          duration: 300
+        });
+      }
+    });
+
+    resizeObserver.observe(mapContainer.current);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [selectedCanton, isExpanded]);
 
   useEffect(() => {
     if (map.current) return; // Initialize map only once
@@ -132,6 +156,15 @@ const CantonMap = ({ sidebarCollapsed, isExpanded = false }) => {
         }
       });
 
+      // Add double-click handler to reset to "All"
+      map.current.on('dblclick', () => {
+        setSelectedCanton('All');
+        map.current.fitBounds(CANTON_BOUNDS['All'], {
+          padding: isExpanded ? 50 : 20,
+          duration: 500
+        });
+      });
+
       // Change cursor on hover
       map.current.on('mouseenter', 'canton-fills', () => {
         map.current.getCanvas().style.cursor = 'pointer';
@@ -145,21 +178,35 @@ const CantonMap = ({ sidebarCollapsed, isExpanded = false }) => {
 
   // Update map when canton changes or expanded state changes
   useEffect(() => {
-    if (!map.current || !map.current.isStyleLoaded()) return;
+    if (!map.current) return;
 
-    const bounds = CANTON_BOUNDS[selectedCanton] || CANTON_BOUNDS["All"];
-    
-    map.current.fitBounds(bounds, {
-      padding: isExpanded ? 50 : 20,
-      duration: 500
-    });
+    const updateMap = () => {
+      if (!map.current.isStyleLoaded() || !map.current.getLayer('canton-highlight')) {
+        // Wait for map to be ready
+        return;
+      }
 
-    // Update highlight filter
-    if (selectedCanton === "All") {
-      map.current.setFilter('canton-highlight', ['==', 'NAME', '']);
+      const bounds = CANTON_BOUNDS[selectedCanton] || CANTON_BOUNDS["All"];
+      
+      map.current.fitBounds(bounds, {
+        padding: isExpanded ? 50 : 20,
+        duration: 500
+      });
+
+      // Update highlight filter
+      if (selectedCanton === "All") {
+        map.current.setFilter('canton-highlight', ['==', 'NAME', '']);
+      } else {
+        // Match canton name in geojson (may need adjustment based on actual data)
+        map.current.setFilter('canton-highlight', ['==', 'NAME', selectedCanton]);
+      }
+    };
+
+    if (map.current.isStyleLoaded()) {
+      updateMap();
     } else {
-      // Match canton name in geojson (may need adjustment based on actual data)
-      map.current.setFilter('canton-highlight', ['==', 'NAME', selectedCanton]);
+      // Wait for the map to finish loading
+      map.current.once('idle', updateMap);
     }
   }, [selectedCanton, isExpanded]);
 
