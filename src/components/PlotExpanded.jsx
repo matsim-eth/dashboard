@@ -15,7 +15,7 @@ const PlotExpanded = ({ isOpen, onClose, expandedComponent }) => {
         <div className="plot-expanded-body">
           {expandedComponent && React.createElement(
             expandedComponent.component,
-            { sidebarCollapsed: false, isExpanded: true, type: expandedComponent.props?.type }
+            { sidebarCollapsed: false, isExpanded: true, ...expandedComponent.props }
           )}
         </div>
       </div>

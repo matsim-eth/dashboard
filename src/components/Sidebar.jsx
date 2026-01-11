@@ -1,7 +1,7 @@
     import React, { useRef, useState } from 'react';
     import './Sidebar.css';
     import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-    import { faHouse, faIdCard, faCar, faBriefcase, faLocationDot, faImage, faFilePdf, faChevronLeft, faChevronRight, faFolder, faXmark, faSpinner, faCheck } from '@fortawesome/free-solid-svg-icons';
+    import { faHouse, faIdCard, faCar, faTrain, faRoad, faBriefcase, faClipboardList, faLocationDot, faImage, faFilePdf, faChevronLeft, faChevronRight, faFolder, faXmark, faSpinner, faCheck } from '@fortawesome/free-solid-svg-icons';
     import { useFileContext } from '../context/FileContext';
 
     const Sidebar = ({ activeTab, setActiveTab, isCollapsed, setIsCollapsed, onExportImage, onExportPDF }) => {
@@ -15,11 +15,14 @@
     const { handleFolderUpload, fileMap, clearFileMap } = useFileContext();
 
     const menuItems = [
-        { id: 'home', label: 'Home', icon: faHouse },
-        { id: 'demographics', label: 'Demographics', icon: faIdCard },
-        { id: 'mode', label: 'Mode', icon: faCar },
+        //{ id: 'home', label: 'Home', icon: faHouse },
+        { id: 'mode', label: 'Mode', icon: faRoad },
         { id: 'purpose', label: 'Purpose', icon: faBriefcase },
-        { id: 'stops', label: 'Stops', icon: faLocationDot },
+        { id: 'activities', label: 'Activities', icon: faClipboardList },
+        { id: 'pt-subscription', label: 'PT Subscription', icon: faTrain },
+        { id: 'car-ownership', label: 'Car Ownership', icon: faCar },
+        { id: 'demographics', label: 'Demographics', icon: faIdCard },
+        //{ id: 'stops', label: 'Stops', icon: faLocationDot },
     ];
     
     const exportItems = [

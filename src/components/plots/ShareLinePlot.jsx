@@ -20,7 +20,15 @@ const PURPOSE_COLORS = {
   work: "#FFEE8C",
 };
 
-const ShareLinePlot = ({ sidebarCollapsed, isExpanded = false, type = 'mode' }) => {
+const ShareLinePlot = ({ 
+  sidebarCollapsed, 
+  isExpanded = false, 
+  type = 'mode',
+  plotType = 'departure', // 'departure' or 'distance'
+  title,
+  xAxisLabel,
+  exportFilename
+}) => {
   const { selectedCanton, distanceType, selectedMode, selectedPurpose } = useDashboard();
   const [plotData, setPlotData] = useState(null);
   const loadWithFallback = useLoadWithFallback();
@@ -31,9 +39,6 @@ const ShareLinePlot = ({ sidebarCollapsed, isExpanded = false, type = 'mode' }) 
   const filterKey = type === 'mode' ? 'mode' : 'purpose';
   const titlePrefix = type === 'mode' ? 'Mode' : 'Purpose';
 
-  // Map distance type to the variable name used in the data files
-  const selectedVariable = distanceType === "euclidean" ? "euclidean_distance" : "network_distance";
-
   // Trigger resize when sidebar collapses/expands
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -43,29 +48,32 @@ const ShareLinePlot = ({ sidebarCollapsed, isExpanded = false, type = 'mode' }) 
   }, [sidebarCollapsed]);
 
   useEffect(() => {
-    const filename = `lineplot_${selectedVariable}_data_${type}.json`;
+    let filename;
+    if (plotType === 'departure') {
+      filename = `lineplot_departure_time_data_${type}.json`;
+    } else {
+      const selectedVariable = distanceType === "euclidean" ? "euclidean_distance" : "network_distance";
+      filename = `lineplot_${selectedVariable}_data_${type}.json`;
+    }
 
     loadWithFallback(filename)
       .then((jsonData) => {
         const cantonKey = selectedCanton || "All";
-        const cantonData = jsonData[cantonKey];
-        if (cantonData && cantonData.microcensus && cantonData.synthetic) {
-          setPlotData(cantonData);
-        } else {
-          console.error(`No data found for canton: ${cantonKey}`);
-          setPlotData(null);
+        if (jsonData[cantonKey]) {
+          setPlotData(jsonData[cantonKey]);
         }
       })
-      .catch((error) => console.error(`Error loading ${selectedVariable} data:`, error));
-  }, [selectedVariable, selectedCanton, type]);
+      .catch((error) => console.error("Error loading data:", error));
+  }, [selectedCanton, type, plotType, distanceType]);
 
   if (!plotData) return <div className="plot-loading">Loading...</div>;
 
   const generateTraces = (data, datasetName, lineStyle) => {
-    const uniqueItems = [...new Set(data.map((entry) => entry[filterKey]))];
-    const filteredItems = selectedFilter === "all" ? uniqueItems : uniqueItems.filter(i => i === selectedFilter);
+    const items = selectedFilter === "all" 
+      ? [...new Set(data.map((entry) => entry[filterKey]))]
+      : [selectedFilter];
 
-    return filteredItems.map((item) => {
+    return items.map((item) => {
       const filtered = data.filter((entry) => entry[filterKey] === item);
       if (filtered.length === 0) return null;
 
@@ -75,10 +83,7 @@ const ShareLinePlot = ({ sidebarCollapsed, isExpanded = false, type = 'mode' }) 
         x: filtered.map((entry) => entry.variable_midpoint),
         y: filtered.map((entry) => entry.percentage),
         name: item,
-        line: {
-          color: colors[item] || "#7f7f7f",
-          dash: lineStyle,
-        },
+        line: { color: colors[item] || "#999", dash: lineStyle },
         marker: { size: 4 },
         legendgroup: item,
         showlegend: false,
@@ -86,19 +91,17 @@ const ShareLinePlot = ({ sidebarCollapsed, isExpanded = false, type = 'mode' }) 
     }).filter(Boolean);
   };
 
-  const tickVals = plotData.tick_vals || [];
-  const tickLabels = plotData.tick_labels || [];
-
   const traces = [
-    ...generateTraces(plotData.microcensus, "MC", "solid"),
-    ...generateTraces(plotData.synthetic, "Syn", "dash"),
+    ...generateTraces(plotData.microcensus, "Microcensus", "solid"),
+    ...generateTraces(plotData.synthetic, "Synthetic", "dash"),
   ];
 
   // Add dummy traces for color legend (as squares)
-  const colorTraces = (selectedFilter === "all" 
+  const items = selectedFilter === "all" 
     ? Object.keys(colors)
-    : [selectedFilter]
-  ).map(item => ({
+    : [selectedFilter];
+  
+  const colorTraces = items.map(item => ({
     type: "scatter",
     mode: "markers",
     x: [null],
@@ -138,28 +141,51 @@ const ShareLinePlot = ({ sidebarCollapsed, isExpanded = false, type = 'mode' }) 
 
   const allTraces = [...traces, ...colorTraces, ...lineStyleTraces];
 
-  const distanceLabel = distanceType === "euclidean" ? "Euclidean Distance" : "Network Distance";
+  // Handle tick labels
+  const tickVals = plotData.tick_vals || [];
+  const tickLabels = plotData.tick_labels || [];
+  const filteredTickVals = plotType === 'departure' ? tickVals.filter((_, i) => i % 2 === 0) : tickVals;
+  const filteredTickLabels = plotType === 'departure' ? tickLabels.filter((_, i) => i % 2 === 0) : tickLabels;
+
+  // Determine title with distance type if needed
+  let displayTitle = title;
+  if (plotType === 'distance') {
+    const distanceLabel = distanceType === "euclidean" ? "Euclidean Distance" : "Network Distance";
+    displayTitle = `${titlePrefix} Share by ${distanceLabel}`;
+  }
+
+  // Determine x-axis label
+  let displayXLabel = xAxisLabel;
+  if (plotType === 'distance') {
+    displayXLabel = distanceType === "euclidean" ? "Euclidean Distance" : "Network Distance";
+  }
+
+  const marginBottom = plotType === 'distance' ? 70 : 65;
 
   return (
     <div className="plot-wrapper">
-      <h4 className="plot-title">{titlePrefix} Share by {distanceLabel}</h4>
+      <h4 className="plot-title">{displayTitle}</h4>
       <Plot
         data={allTraces}
         layout={{
           xaxis: {
             title: {
-              text: distanceLabel,
+              text: displayXLabel,
               font: { size: 11 },
-              standoff: 10,
+              standoff: 10
             },
             tickmode: "array",
-            tickvals: tickVals,
-            ticktext: tickLabels,
+            tickvals: filteredTickVals,
+            ticktext: filteredTickLabels,
             tickangle: 45,
-            tickfont: { size: 8 },
+            tickfont: { size: plotType === 'distance' ? 8 : 9 },
           },
-          yaxis: {
-            title: { text: `${titlePrefix} Share [%]`, font: { size: 11 } },
+          yaxis: { 
+            title: {
+              text: `${titlePrefix} Share [%]`,
+              font: { size: 11 },
+              standoff: 10
+            },
             tickfont: { size: 9 },
           },
           legend: { 
@@ -171,7 +197,7 @@ const ShareLinePlot = ({ sidebarCollapsed, isExpanded = false, type = 'mode' }) 
             font: { size: 8 },
             tracegroupgap: type === 'mode' ? 5 : 2,
           },
-          margin: { l: 45, r: 15, t: 5, b: 70 },
+          margin: { l: 50, r: 15, t: 5, b: marginBottom },
           paper_bgcolor: "rgba(0,0,0,0)",
           plot_bgcolor: "rgba(0,0,0,0)",
           autosize: true,
@@ -182,7 +208,7 @@ const ShareLinePlot = ({ sidebarCollapsed, isExpanded = false, type = 'mode' }) 
           responsive: true, 
           displayModeBar: isExpanded ? 'hover' : false,
           toImageButtonOptions: { 
-            filename: `${type}-share-by-distance`,
+            filename: exportFilename,
             format: 'png',
             height: 800,
             width: 1200
