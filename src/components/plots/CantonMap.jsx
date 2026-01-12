@@ -82,10 +82,10 @@ const CantonMap = ({ sidebarCollapsed, isExpanded = false }) => {
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/light-v11',
       center: [8.2275, 46.8182], // Switzerland center
-      zoom: 5.5, // Zoomed out more to fit all of Switzerland
+      zoom: 5.5, // Zoomed out to fit all of Switzerland
       attributionControl: false,
       preserveDrawingBuffer: true, // Required for html2canvas export
-      dragPan: false,
+      dragPan: false, // disable all map interactions by default
       scrollZoom: false,
       boxZoom: false,
       dragRotate: false,
@@ -176,7 +176,7 @@ const CantonMap = ({ sidebarCollapsed, isExpanded = false }) => {
     });
   }, []);
 
-  // Update map when canton changes or expanded state changes
+  // Update map when canton changes (ie from toolbar) or expanded state changes
   useEffect(() => {
     if (!map.current) return;
 
@@ -188,12 +188,13 @@ const CantonMap = ({ sidebarCollapsed, isExpanded = false }) => {
 
       const bounds = CANTON_BOUNDS[selectedCanton] || CANTON_BOUNDS["All"];
       
+      // zoom to the changed canton
       map.current.fitBounds(bounds, {
         padding: isExpanded ? 50 : 20,
         duration: 500
       });
 
-      // Update highlight filter
+      // update highlighted polygon
       if (selectedCanton === "All") {
         map.current.setFilter('canton-highlight', ['==', 'NAME', '']);
       } else {

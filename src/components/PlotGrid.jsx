@@ -11,12 +11,12 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faExpand } from '@fortawesome/free-solid-svg-icons';
 
 const TAB_LABELS = {
-  home: 'Home',
-  demographics: 'Demographics',
-  activities: 'Activities',
-  mode: 'Mode',
-  purpose: 'Purpose',
-  stops: 'Stops',
+  'home': 'Home',
+  'demographics': 'Demographics',
+  'activities': 'Activities',
+  'mode': 'Mode',
+  'purpose': 'Purpose',
+  'stops': 'Stops',
   'pt-subscription': 'PT Subscription',
   'car-ownership': 'Car Ownership',
 };
@@ -24,9 +24,6 @@ const TAB_LABELS = {
 const PlotGrid = ({ sidebarCollapsed, activeTab }) => {
   const [expandedPlot, setExpandedPlot] = useState(null);
 
-  // Determine if the current tab needs a map
-  const tabsWithMap = ['mode', 'purpose', 'activities', 'demographics', 'car-ownership', 'pt-subscription'];
-  const hasMap = tabsWithMap.includes(activeTab);
   const isTwoPlotLayout = activeTab === 'demographics' || activeTab === 'car-ownership';
 
   const modePlots = [
@@ -52,7 +49,10 @@ const PlotGrid = ({ sidebarCollapsed, activeTab }) => {
         exportFilename: 'departure-time-mode'
       } 
     },
-    { id: 'mode-distance-stacked', component: ByDistanceStacked, title: 'Mode Distribution by Distance Travelled', props: { type: 'mode' } },
+    { id: 'mode-distance-stacked', 
+      component: ByDistanceStacked, 
+      title: 'Mode Distribution by Distance Travelled', 
+      props: { type: 'mode' } },
     { 
       id: 'average-distance', 
       component: DistributionBarPlot, 
@@ -104,7 +104,10 @@ const PlotGrid = ({ sidebarCollapsed, activeTab }) => {
         exportFilename: 'departure-time-purpose'
       } 
     },
-    { id: 'purpose-distance-stacked', component: ByDistanceStacked, title: 'Purpose Distribution by Distance Travelled', props: { type: 'purpose' } },
+    { id: 'purpose-distance-stacked', 
+      component: ByDistanceStacked, 
+      title: 'Purpose Distribution by Distance Travelled', 
+      props: { type: 'purpose' } },
     { 
       id: 'average-distance-purpose', 
       component: DistributionBarPlot, 
@@ -351,10 +354,10 @@ const PlotGrid = ({ sidebarCollapsed, activeTab }) => {
     plots = ptSubscriptionPlots;
   } else if (activeTab === 'car-ownership') {
     plots = carAvailabilityPlots;
-    gridClass = 'plot-grid plot-grid-two-plots';
+    gridClass = 'plot-grid plot-grid-two-plots'; // 2 plot layout
   } else if (activeTab === 'demographics') {
     plots = demographicsPlots;
-    gridClass = 'plot-grid plot-grid-two-plots';
+    gridClass = 'plot-grid plot-grid-two-plots'; // 2 plot layout
   }
 
   // placeholders for other tabs
@@ -375,23 +378,21 @@ const PlotGrid = ({ sidebarCollapsed, activeTab }) => {
   return (
     <>
       <div className={gridClass}>
-        {/* Persistent Canton Map - shown in specific tabs */}
-        {hasMap && (
-          <div 
-            key="persistent-canton-map" 
-            className={isTwoPlotLayout ? "plot-card persistent-map-two-plots" : "plot-card persistent-map"}
-            style={isTwoPlotLayout ? { gridArea: 'map' } : {}}
+        {/* Canton Map*/}
+        <div 
+          key="persistent-canton-map" 
+          className={isTwoPlotLayout ? "plot-card persistent-map-two-plots" : "plot-card persistent-map"}
+          style={isTwoPlotLayout ? { gridArea: 'map' } : {}}
+        >
+          <CantonMap sidebarCollapsed={sidebarCollapsed} />
+          <button 
+            className="plot-expand-btn"
+            onClick={() => setExpandedPlot({ id: 'canton-map', component: CantonMap, title: 'Canton Map' })}
+            title="Expand plot"
           >
-            <CantonMap sidebarCollapsed={sidebarCollapsed} />
-            <button 
-              className="plot-expand-btn"
-              onClick={() => setExpandedPlot({ id: 'canton-map', component: CantonMap, title: 'Canton Map' })}
-              title="Expand plot"
-            >
-              <FontAwesomeIcon icon={faExpand} />
-            </button>
-          </div>
-        )}
+            <FontAwesomeIcon icon={faExpand} />
+          </button>
+        </div>
 
         {plots.map((plot, i) => {
           if (plot.placeholder) {

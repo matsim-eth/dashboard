@@ -17,7 +17,6 @@ const DistributionBarPlot = ({
   yAxisLabel = "Percentage [%]", // optional: custom y-axis label
   dataTransform = null, // optional: function to transform data values (e.g., for distance conversion)
   filterType = null, // null, "income", "age", "gender", or "distance"
-  labelMapper = null, // optional function to transform x-axis labels
   customCategories = null, // optional: provide custom categories and their data keys
   yAxisRange = null, // optional: [min, max] for fixed y-axis range
   xAxisRange = null, // optional: [min, max] for fixed x-axis range
@@ -98,7 +97,7 @@ const DistributionBarPlot = ({
   // Determine x-axis labels
   const xLabels = customCategories 
     ? customCategories.map(c => c.label) 
-    : (labelMapper ? categories.map(labelMapper) : categories);
+    : categories;
 
   // Transform data function - handles both percentage and custom transformations
   const transformValue = (value) => {

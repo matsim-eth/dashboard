@@ -36,8 +36,6 @@ const ShareLinePlot = ({
   // Select colors and filter based on type
   const colors = type === 'mode' ? MODE_COLORS : PURPOSE_COLORS;
   const selectedFilter = type === 'mode' ? selectedMode : selectedPurpose;
-  const filterKey = type === 'mode' ? 'mode' : 'purpose';
-  const titlePrefix = type === 'mode' ? 'Mode' : 'Purpose';
 
   // Trigger resize when sidebar collapses/expands
   useEffect(() => {
@@ -68,13 +66,13 @@ const ShareLinePlot = ({
 
   if (!plotData) return <div className="plot-loading">Loading...</div>;
 
-  const generateTraces = (data, datasetName, lineStyle) => {
+  const generateTraces = (data, lineStyle) => {
     const items = selectedFilter === "all" 
-      ? [...new Set(data.map((entry) => entry[filterKey]))]
+      ? [...new Set(data.map((entry) => entry[type]))]
       : [selectedFilter];
 
     return items.map((item) => {
-      const filtered = data.filter((entry) => entry[filterKey] === item);
+      const filtered = data.filter((entry) => entry[type] === item);
       if (filtered.length === 0) return null;
 
       return {
@@ -92,8 +90,8 @@ const ShareLinePlot = ({
   };
 
   const traces = [
-    ...generateTraces(plotData.microcensus, "Microcensus", "solid"),
-    ...generateTraces(plotData.synthetic, "Synthetic", "dash"),
+    ...generateTraces(plotData.microcensus, "solid"),
+    ...generateTraces(plotData.synthetic, "dash"),
   ];
 
   // Add dummy traces for color legend (as squares)
@@ -151,7 +149,7 @@ const ShareLinePlot = ({
   let displayTitle = title;
   if (plotType === 'distance') {
     const distanceLabel = distanceType === "euclidean" ? "Euclidean Distance" : "Network Distance";
-    displayTitle = `${titlePrefix} Share by ${distanceLabel}`;
+    displayTitle = `${type.charAt(0).toUpperCase() + type.slice(1)} Share by ${distanceLabel}`;
   }
 
   // Determine x-axis label
@@ -182,7 +180,7 @@ const ShareLinePlot = ({
           },
           yaxis: { 
             title: {
-              text: `${titlePrefix} Share [%]`,
+              text: `${type.charAt(0).toUpperCase() + type.slice(1)} Share [%]`,
               font: { size: 11 },
               standoff: 10
             },
