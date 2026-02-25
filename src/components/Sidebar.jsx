@@ -159,7 +159,7 @@
             <nav className="sidebar-nav">
                 <button
                     className="sidebar-item"
-                    onClick={() => window.open("https://matsim-eth.github.io/webmap/", "_blank")}
+                    onClick={() => window.open("https://matsim-eth.github.io/webmap/", "webmap-tab")}
                     title={isCollapsed ? "Open Webmap" : ""}
                 >
                     <span className="sidebar-icon"><FontAwesomeIcon icon={faMap} /></span>

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import Plot from "react-plotly.js";
 import { useDashboard } from "../../context/DashboardContext";
 import { useLoadWithFallback } from "../../utils/useLoadWithFallback";
+import cantonAlias from "../../utils/canton_alias.json";
 
 const METRICS = {
   boardings: { label: "Boardings", color: "#1f77b4" },
@@ -90,7 +91,7 @@ const PassengersByStop = ({ sidebarCollapsed, isExpanded = false, metric = "boar
   const paddedValues = fullLabels.map((t) => dataMap[t] ?? 0);
 
   // Build title
-  let plotTitle = `Hourly ${label} - ${selectedCanton}`;
+  let plotTitle = `Hourly ${label} - ${cantonAlias[selectedCanton] || selectedCanton}`;
   if (selectedTransitStop) {
     plotTitle = `Hourly ${label} - ${selectedTransitStop.name}`;
     if (selectedTransitLine) {

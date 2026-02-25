@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useDashboard } from "../../context/DashboardContext";
 import { useLoadWithFallback } from "../../utils/useLoadWithFallback";
+import cantonAlias from "../../utils/canton_alias.json";
 
 const TransitStopSummary = () => {
   const { selectedCanton, selectedTransitStop, selectedTransitLine } = useDashboard();
@@ -115,7 +116,7 @@ const TransitStopSummary = () => {
       }
       return selectedTransitStop.name;
     }
-    return selectedCanton;
+    return cantonAlias[selectedCanton] || selectedCanton;
   })();
 
   // --- Render states ---
