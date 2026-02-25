@@ -3,7 +3,7 @@ import './App.css'
 import Sidebar from './components/Sidebar'
 import PlotGrid from './components/PlotGrid'
 import ControlsBar from './components/ControlsBar'
-import { DashboardProvider } from './context/DashboardContext'
+import { DashboardProvider, useDashboard } from './context/DashboardContext'
 import { FileProvider } from './context/FileContext'
 import html2canvas from 'html2canvas'
 import jsPDF from 'jspdf'
@@ -15,11 +15,20 @@ function AppContent() {
   const [dataRefreshKey, setDataRefreshKey] = useState(0)
   const mainContentRef = useRef(null)
   const { fileMap } = useFileContext()
+  const { setSelectedTransitStop, setSelectedTransitLine } = useDashboard()
 
   // Refresh plots when files are uploaded/removed (so they use new data)
   useEffect(() => {
     setDataRefreshKey(prev => prev + 1)
   }, [fileMap.size])
+
+  // Clear selected transit stop when leaving transit stops page
+  useEffect(() => {
+    if (activeTab !== 'transit-stops') {
+      setSelectedTransitStop(null)
+      setSelectedTransitLine(null)
+    }
+  }, [activeTab])
 
   const exportAsImage = async () => {
     if (!mainContentRef.current) return

@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useDashboard } from '../../context/DashboardContext';
+import { useLoadWithFallback } from '../../utils/useLoadWithFallback';
 
 // Canton bounding boxes for zooming
 const CANTON_BOUNDS = {
@@ -34,11 +35,28 @@ const CANTON_BOUNDS = {
   "AppenzellInnerrhoden": [[9.35, 47.24], [9.51, 47.5]],
 };
 
-const CantonMap = ({ sidebarCollapsed, isExpanded = false }) => {
+const CantonMap = ({ sidebarCollapsed, isExpanded = false, activeTab }) => {
   const mapContainer = useRef(null);
   const map = useRef(null);
-  const { selectedCanton, setSelectedCanton } = useDashboard();
+  const markerRef = useRef(null);
+  const activeTabRef = useRef(activeTab); // Track current activeTab for map handlers
+  const { selectedCanton, setSelectedCanton, selectedTransitStop, setSelectedTransitStop, setSelectedTransitLine } = useDashboard();
   const initialCantonRef = useRef(selectedCanton); // Store initial canton on mount
+  const loadWithFallback = useLoadWithFallback();
+
+  // Update activeTab ref and toggle map interactions when it changes
+  useEffect(() => {
+    activeTabRef.current = activeTab;
+    if (!map.current) return;
+
+    if (activeTab === 'transit-stops') {
+      map.current.dragPan.enable();
+      map.current.scrollZoom.enable();
+    } else {
+      map.current.dragPan.disable();
+      map.current.scrollZoom.disable();
+    }
+  }, [activeTab]);
 
   // Trigger map resize when sidebar collapses/expands
   useEffect(() => {
@@ -57,6 +75,11 @@ const CantonMap = ({ sidebarCollapsed, isExpanded = false }) => {
       if (map.current && map.current.isStyleLoaded()) {
         map.current.resize();
         
+        // Don't refit bounds on transit stops page
+        if (activeTab === 'transit-stops') {
+          return;
+        }
+        
         // Re-fit bounds after resize to adjust padding for new container size
         const bounds = CANTON_BOUNDS[selectedCanton] || CANTON_BOUNDS["All"];
         map.current.fitBounds(bounds, {
@@ -71,7 +94,7 @@ const CantonMap = ({ sidebarCollapsed, isExpanded = false }) => {
     return () => {
       resizeObserver.disconnect();
     };
-  }, [selectedCanton, isExpanded]);
+  }, [selectedCanton, activeTab, isExpanded]);
 
   useEffect(() => {
     if (map.current) return; // Initialize map only once
@@ -137,12 +160,15 @@ const CantonMap = ({ sidebarCollapsed, isExpanded = false }) => {
 
       // Apply initial canton selection if one was already selected
       const initCanton = initialCantonRef.current;
-      if (initCanton && initCanton !== "All") {
+      if (initCanton && initCanton !== "All" && activeTab !== 'transit-stops') {
         const bounds = CANTON_BOUNDS[initCanton] || CANTON_BOUNDS["All"];
         map.current.fitBounds(bounds, {
           padding: isExpanded ? 50 : 20,
           duration: 0
         });
+        map.current.setFilter('canton-highlight', ['==', 'NAME', initCanton]);
+      } else if (initCanton && initCanton !== "All") {
+        // Still highlight the canton, just don't zoom
         map.current.setFilter('canton-highlight', ['==', 'NAME', initCanton]);
       }
 
@@ -159,10 +185,13 @@ const CantonMap = ({ sidebarCollapsed, isExpanded = false }) => {
       // Add double-click handler to reset to "All"
       map.current.on('dblclick', () => {
         setSelectedCanton('All');
-        map.current.fitBounds(CANTON_BOUNDS['All'], {
-          padding: isExpanded ? 50 : 20,
-          duration: 500
-        });
+        // Don't zoom on transit-stops page
+        if (activeTabRef.current !== 'transit-stops') {
+          map.current.fitBounds(CANTON_BOUNDS['All'], {
+            padding: isExpanded ? 50 : 20,
+            duration: 500
+          });
+        }
       });
 
       // Change cursor on hover
@@ -176,6 +205,200 @@ const CantonMap = ({ sidebarCollapsed, isExpanded = false }) => {
     });
   }, []);
 
+  // Load and display transit stops for transit-stops page
+  useEffect(() => {
+    if (!map.current || activeTab !== 'transit-stops' || !selectedCanton || selectedCanton === 'All') {
+      // Remove transit layers if they exist
+      if (map.current) {
+        if (map.current.getLayer('transit-stops-label')) {
+          map.current.removeLayer('transit-stops-label');
+        }
+        if (map.current.getLayer('transit-stops-layer')) {
+          map.current.removeLayer('transit-stops-layer');
+        }
+        if (map.current.getSource('transit-stops')) {
+          map.current.removeSource('transit-stops');
+        }
+      }
+      return;
+    }
+
+    const loadTransitStops = async () => {
+      try {
+        const stopsPath = `matsim/transit/stops_by_canton/${selectedCanton}_stops.geojson`;
+        const geojson = await loadWithFallback(stopsPath);
+        
+        if (map.current.getSource('transit-stops')) {
+          map.current.getSource('transit-stops').setData(geojson);
+        } else {
+          map.current.addSource('transit-stops', {
+            type: 'geojson',
+            data: geojson
+          });
+        }
+
+        if (!map.current.getLayer('transit-stops-layer')) {
+          map.current.addLayer({
+            id: 'transit-stops-layer',
+            type: 'circle',
+            source: 'transit-stops',
+            paint: {
+              'circle-radius': 3,
+              'circle-color': '#ff8800',
+              'circle-stroke-color': '#333',
+              'circle-stroke-width': 1
+            }
+          });
+        }
+
+        // Add transit stop labels
+        if (!map.current.getLayer('transit-stops-label')) {
+          map.current.addLayer({
+            id: 'transit-stops-label',
+            type: 'symbol',
+            source: 'transit-stops',
+            layout: {
+              'text-field': ['get', 'name'],
+              'text-size': 12,
+              'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
+              'text-offset': [0, -0.8],
+              'text-anchor': 'bottom-left'
+            },
+            paint: {
+              'text-color': '#222',
+              'text-halo-color': '#ffffff',
+              'text-halo-width': 1
+            },
+            minzoom: 14
+          });
+        }
+      } catch (error) {
+        console.error('Error loading transit stops:', error);
+      }
+    };
+
+    if (map.current.isStyleLoaded()) {
+      loadTransitStops();
+    } else {
+      map.current.once('load', loadTransitStops);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, selectedCanton]);
+
+  // Add click handler for transit stops
+  useEffect(() => {
+    if (!map.current || activeTab !== 'transit-stops') return;
+
+    const handleStopClick = (e) => {
+      if (!e.features || e.features.length === 0) return;
+
+      const feature = e.features[0];
+      const { name, stop_id, lines, modes_list } = feature.properties;
+      const coords = feature.geometry.coordinates;
+
+      // Parse stop_ids into array format (matching TransitStopSearch logic)
+      let allStopIds = [];
+      if (Array.isArray(stop_id)) {
+        allStopIds = stop_id;
+      } else {
+        try {
+          allStopIds = JSON.parse(stop_id);
+        } catch {
+          allStopIds = String(stop_id).split(",").map(id => id.trim());
+        }
+      }
+
+      // Clear selected line when changing stops
+      setSelectedTransitLine(null);
+      
+      // Update context with selected stop
+      setSelectedTransitStop({
+        name,
+        stop_id,
+        stop_ids: allStopIds,
+        lines,
+        modes_list,
+        coords,
+        feature
+      });
+    };
+
+    const handleMouseEnter = () => {
+      map.current.getCanvas().style.cursor = 'pointer';
+    };
+
+    const handleMouseLeave = () => {
+      map.current.getCanvas().style.cursor = '';
+    };
+
+    // Add event listeners
+    map.current.on('click', 'transit-stops-layer', handleStopClick);
+    map.current.on('mouseenter', 'transit-stops-layer', handleMouseEnter);
+    map.current.on('mouseleave', 'transit-stops-layer', handleMouseLeave);
+
+    // Cleanup
+    return () => {
+      if (map.current) {
+        map.current.off('click', 'transit-stops-layer', handleStopClick);
+        map.current.off('mouseenter', 'transit-stops-layer', handleMouseEnter);
+        map.current.off('mouseleave', 'transit-stops-layer', handleMouseLeave);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
+
+  // Zoom to selected transit stop
+  useEffect(() => {
+    if (!map.current) return;
+
+    // Remove marker if not on transit stops page
+    if (activeTab !== 'transit-stops') {
+      if (markerRef.current) {
+        markerRef.current.remove();
+        markerRef.current = null;
+      }
+      return;
+    }
+
+    // Remove existing marker if no stop is selected
+    if (!selectedTransitStop) {
+      if (markerRef.current) {
+        markerRef.current.remove();
+        markerRef.current = null;
+      }
+      return;
+    }
+
+    const { coords, name } = selectedTransitStop;
+
+    // Remove existing marker
+    if (markerRef.current) {
+      markerRef.current.remove();
+    }
+
+    // Create highlight marker
+    const el = document.createElement('div');
+    el.className = 'transit-stop-marker';
+    el.style.width = '10px';
+    el.style.height = '10px';
+    el.style.borderRadius = '50%';
+    el.style.backgroundColor = '#00ffff';
+    el.style.border = '2px solid #fff';
+    el.style.boxShadow = '0 0 10px rgba(0,255,255,0.5)';
+
+    markerRef.current = new mapboxgl.Marker(el)
+      .setLngLat(coords)
+      .addTo(map.current);
+
+    // Zoom to stop
+    map.current.flyTo({
+      center: coords,
+      zoom: 14,
+      duration: 1000
+    });
+
+  }, [selectedTransitStop, activeTab]);
+
   // Update map when canton changes (ie from toolbar) or expanded state changes
   useEffect(() => {
     if (!map.current) return;
@@ -186,21 +409,30 @@ const CantonMap = ({ sidebarCollapsed, isExpanded = false }) => {
         return;
       }
 
-      const bounds = CANTON_BOUNDS[selectedCanton] || CANTON_BOUNDS["All"];
-      
-      // zoom to the changed canton
-      map.current.fitBounds(bounds, {
-        padding: isExpanded ? 50 : 20,
-        duration: 500
-      });
-
-      // update highlighted polygon
+      // update highlighted polygon first
       if (selectedCanton === "All") {
         map.current.setFilter('canton-highlight', ['==', 'NAME', '']);
       } else {
         // Match canton name in geojson (may need adjustment based on actual data)
         map.current.setFilter('canton-highlight', ['==', 'NAME', selectedCanton]);
       }
+
+      // Zoom to canton bounds with a slight delay to ensure it happens after resize
+      // Don't zoom if on transit-stops page with a selected stop
+      if (activeTab === 'transit-stops' && selectedTransitStop) {
+        return;
+      }
+      
+      setTimeout(() => {
+        if (!map.current) return;
+        const bounds = CANTON_BOUNDS[selectedCanton] || CANTON_BOUNDS["All"];
+        
+        // zoom to the changed canton
+        map.current.fitBounds(bounds, {
+          padding: isExpanded ? 50 : 20,
+          duration: 500
+        });
+      }, 100);
     };
 
     if (map.current.isStyleLoaded()) {
@@ -209,7 +441,7 @@ const CantonMap = ({ sidebarCollapsed, isExpanded = false }) => {
       // Wait for the map to finish loading
       map.current.once('idle', updateMap);
     }
-  }, [selectedCanton, isExpanded]);
+  }, [selectedCanton, activeTab, isExpanded, selectedTransitStop]);
 
   return (
     <div className="canton-map-container">

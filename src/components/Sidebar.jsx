@@ -1,7 +1,7 @@
     import React, { useRef, useState } from 'react';
     import './Sidebar.css';
     import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-    import { faHouse, faIdCard, faCar, faTrain, faRoad, faBriefcase, faClipboardList, faLocationDot, faImage, faFilePdf, faChevronLeft, faChevronRight, faFolder, faXmark, faSpinner, faCheck } from '@fortawesome/free-solid-svg-icons';
+    import { faHouse, faIdCard, faCar, faTrain, faRoad, faBriefcase, faClipboardList, faLocationDot, faImage, faFilePdf, faChevronLeft, faChevronRight, faFolder, faXmark, faSpinner, faCheck, faMap } from '@fortawesome/free-solid-svg-icons';
     import { useFileContext } from '../context/FileContext';
 
     const Sidebar = ({ activeTab, setActiveTab, isCollapsed, setIsCollapsed, onExportImage, onExportPDF }) => {
@@ -22,7 +22,7 @@
         { id: 'pt-subscription', label: 'PT Subscription', icon: faTrain },
         { id: 'car-ownership', label: 'Car Ownership', icon: faCar },
         { id: 'demographics', label: 'Demographics', icon: faIdCard },
-        //{ id: 'stops', label: 'Stops', icon: faLocationDot },
+        { id: 'transit-stops', label: 'Transit Stops', icon: faLocationDot },
     ];
     
     const exportItems = [
@@ -68,7 +68,8 @@
 
     return (
         <aside className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}>
-
+        
+        <div className="sidebar-content">
         {/* Menu Section */}
 
         <div className="sidebar-section">
@@ -153,7 +154,22 @@
             </nav>
         </div>
 
-        {/* Collapse/Expand Button */}
+        <div className="sidebar-section">
+            {!isCollapsed && <span className="sidebar-section-title">WEBMAP</span>}
+            <nav className="sidebar-nav">
+                <button
+                    className="sidebar-item"
+                    onClick={() => window.open("https://matsim-eth.github.io/webmap/", "_blank")}
+                    title={isCollapsed ? "Open Webmap" : ""}
+                >
+                    <span className="sidebar-icon"><FontAwesomeIcon icon={faMap} /></span>
+                    {!isCollapsed && <span className="sidebar-label">Open Webmap</span>}
+                </button>
+            </nav>
+        </div>
+        </div>
+
+    {/* Collapse/Expand Button */}
         <button 
             className="sidebar-toggle"
             onClick={() => setIsCollapsed(!isCollapsed)}
@@ -163,6 +179,6 @@
         </button>
         </aside>
     );
-    };
+};
 
-    export default Sidebar;
+export default Sidebar;

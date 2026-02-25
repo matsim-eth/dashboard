@@ -10,6 +10,8 @@ export const DashboardProvider = ({ children }) => {
   const [selectedGender, setSelectedGender] = useState("male"); // "male", "female"
   const [selectedIncome, setSelectedIncome] = useState("1"); // "1", "2", ..., "8"
   const [selectedAge, setSelectedAge] = useState("[6, 15)"); // "[6, 15)", "[15, 18)", "[18, 24)", "[24, 30)", "[30, 45)", "[45, 65)"
+  const [selectedTransitStop, setSelectedTransitStop] = useState(null); // { name, stop_id, coords, ... }
+  const [selectedTransitLine, setSelectedTransitLine] = useState(null); // null (all) or line_id string
 
   const value = {
     selectedCanton, setSelectedCanton,
@@ -19,6 +21,8 @@ export const DashboardProvider = ({ children }) => {
     selectedGender, setSelectedGender,
     selectedIncome, setSelectedIncome,
     selectedAge, setSelectedAge,
+    selectedTransitStop, setSelectedTransitStop,
+    selectedTransitLine, setSelectedTransitLine,
   };
 
   return (

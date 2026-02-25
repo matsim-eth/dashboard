@@ -2,6 +2,7 @@ import React from 'react';
 import './ControlsBar.css';
 import { useDashboard } from '../context/DashboardContext';
 import cantonAlias from '../utils/canton_alias.json';
+import TransitStopSearch from './plots/TransitStopSearch';
 
 const CANTONS = [
   "All", "Aargau", "AppenzellAusserrhoden", "AppenzellInnerrhoden", 
@@ -72,6 +73,7 @@ const ControlsBar = ({ activeTab }) => {
   const showDemographicFilters = activeTab === 'pt-subscription';
   const showCarOwnershipFilters = activeTab === 'car-ownership';
   const showDistanceType = activeTab === 'mode' || activeTab === 'purpose';
+  const showTransitSearch = activeTab === 'transit-stops';
 
   return (
     <div className="controls-bar">
@@ -90,6 +92,11 @@ const ControlsBar = ({ activeTab }) => {
           ))}
         </select>
       </div>
+
+      {/* Transit Stop Search - only show on Transit Stops tab */}
+      {showTransitSearch && (
+        <TransitStopSearch canton={selectedCanton} />
+      )}
 
       {/* Distance Type Toggle - only show on Mode/Purpose tabs */}
       {showDistanceType && (

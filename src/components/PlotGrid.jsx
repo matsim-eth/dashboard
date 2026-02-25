@@ -6,6 +6,10 @@ import ShareLinePlot from './plots/ShareLinePlot';
 import ByDistanceStacked from './plots/ByDistanceStacked';
 import DistributionBarPlot from './plots/DistributionBarPlot';
 import PtSubscriptionInfo from './plots/PtSubscriptionInfo';
+import PassengersByStop from './plots/PassengersByStop';
+import TransitStopSummary from './plots/TransitStopSummary';
+import TransferMatrix from './plots/TransferMatrix';
+import TransferDestinations from './plots/TransferDestinations';
 import PlotExpanded from './PlotExpanded';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faExpand } from '@fortawesome/free-solid-svg-icons';
@@ -19,6 +23,7 @@ const TAB_LABELS = {
   'stops': 'Stops',
   'pt-subscription': 'PT Subscription',
   'car-ownership': 'Car Ownership',
+  'transit-stops': 'Transit Stops',
 };
 
 const PlotGrid = ({ sidebarCollapsed, activeTab }) => {
@@ -340,6 +345,14 @@ const PlotGrid = ({ sidebarCollapsed, activeTab }) => {
     },
   ];
 
+  const transitStopsPlots = [
+    { id: 'boardings-by-stop', component: PassengersByStop, title: 'Boardings by Stop', props: { metric: 'boardings' } },
+    { id: 'alightings-by-stop', component: PassengersByStop, title: 'Alightings by Stop', props: { metric: 'alightings' } },
+    { id: 'transit-stop-summary', component: TransitStopSummary, title: 'Daily Totals' },
+    { id: 'transfer-matrix', component: TransferMatrix, title: 'Transfer Matrix' },
+    { id: 'transfer-destinations', component: TransferDestinations, title: 'Transfer Destinations' },
+  ];
+
   // set plots based on active tab
   let plots = null;
   let gridClass = 'plot-grid'; // default 3x2 grid
@@ -358,6 +371,8 @@ const PlotGrid = ({ sidebarCollapsed, activeTab }) => {
   } else if (activeTab === 'demographics') {
     plots = demographicsPlots;
     gridClass = 'plot-grid plot-grid-two-plots'; // 2 plot layout
+  } else if (activeTab === 'transit-stops') {
+    plots = transitStopsPlots;
   }
 
   // placeholders for other tabs
@@ -384,10 +399,15 @@ const PlotGrid = ({ sidebarCollapsed, activeTab }) => {
           className={isTwoPlotLayout ? "plot-card persistent-map-two-plots" : "plot-card persistent-map"}
           style={isTwoPlotLayout ? { gridArea: 'map' } : {}}
         >
-          <CantonMap sidebarCollapsed={sidebarCollapsed} />
+          <CantonMap sidebarCollapsed={sidebarCollapsed} activeTab={activeTab} />
           <button 
             className="plot-expand-btn"
-            onClick={() => setExpandedPlot({ id: 'canton-map', component: CantonMap, title: 'Canton Map' })}
+            onClick={() => setExpandedPlot({ 
+              id: 'canton-map', 
+              component: CantonMap, 
+              title: 'Canton Map',
+              props: { activeTab }
+            })}
             title="Expand plot"
           >
             <FontAwesomeIcon icon={faExpand} />
