@@ -9,6 +9,8 @@ import html2canvas from 'html2canvas'
 import jsPDF from 'jspdf'
 import { useFileContext } from './context/FileContext'
 
+window.name = 'dashboard-tab';
+
 function AppContent() {
   const [activeTab, setActiveTab] = useState('mode')
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
