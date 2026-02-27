@@ -118,6 +118,12 @@ const CantonMap = ({ sidebarCollapsed, isExpanded = false, activeTab }) => {
     });
 
     map.current.on('load', () => {
+      // Enable map interactions if already on transit-stops page at mount time
+      if (activeTabRef.current === 'transit-stops') {
+        map.current.dragPan.enable();
+        map.current.scrollZoom.enable();
+      }
+
       // Add canton boundaries source
       map.current.addSource('cantons', {
         type: 'geojson',

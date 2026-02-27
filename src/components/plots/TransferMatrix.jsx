@@ -42,8 +42,13 @@ const TransferMatrix = ({ sidebarCollapsed, isExpanded = false }) => {
       return null;
     }
 
-    const cantonData = transferData[selectedCanton];
-    if (!cantonData) return null;
+  // Merge selected canton + inter_cantonal
+  const cantonData = {
+    ...(transferData[selectedCanton] || {}),
+    ...(transferData["inter_cantonal"] || {}),
+  };
+
+  if (Object.keys(cantonData).length === 0) return null;
 
     // Find the stop data using multiple ID matching strategies
     let foundStopData = null;
@@ -104,9 +109,22 @@ const TransferMatrix = ({ sidebarCollapsed, isExpanded = false }) => {
     const lineNames = [];
 
     // Resolve human-readable line names from boarding data
+    const nameCount = {};
     lineArray.forEach((lineId) => {
       const entry = Object.values(boardingData).find((e) => e.line_id === lineId);
-      lineNames.push(entry ? `${entry.line_name} (${entry.vehicle})` : lineId);
+      let name = entry ? `${entry.line_name} (${entry.vehicle})` : lineId;
+      nameCount[name] = (nameCount[name] || 0) + 1;
+    });
+
+    const nameUsed = {};
+    lineArray.forEach((lineId) => {
+      const entry = Object.values(boardingData).find((e) => e.line_id === lineId);
+      let name = entry ? `${entry.line_name} (${entry.vehicle})` : lineId;
+      if (nameCount[name] > 1) {
+        nameUsed[name] = (nameUsed[name] || 0) + 1;
+        name = `${name} #${nameUsed[name]}`;
+      }
+      lineNames.push(name);
     });
 
     lineArray.forEach((fromLine, i) => {

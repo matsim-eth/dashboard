@@ -82,8 +82,13 @@ const TransferDestinations = ({ sidebarCollapsed, isExpanded = false }) => {
   const destinationResult = useMemo(() => {
     if (!selectedTransitStop || !transferData || !selectedCanton) return null;
 
-    const cantonData = transferData[selectedCanton];
-    if (!cantonData) return null;
+    // Merge selected canton + inter_cantonal
+    const cantonData = {
+      ...(transferData[selectedCanton] || {}),
+      ...(transferData["inter_cantonal"] || {}),
+    };
+
+    if (Object.keys(cantonData).length === 0) return null;
 
     // Find stop data (same matching logic as other transit plots)
     let foundStopData = null;
