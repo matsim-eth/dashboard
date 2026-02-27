@@ -121,14 +121,22 @@ const DistributionBarPlot = ({
             type: "bar",
             x: xLabels,
             y: categories.map((cat) => {
-              const value = microData[cat] || (filterType === "distance" && microData[cat] ? microData[cat] : 0);
-              return filterType === "distance" ? transformValue(microData[cat]?.euclidean_distance || microData[cat]?.network_distance || 0) : transformValue(value);
+              const value = microData[cat] || 0;
+              if (filterType === "distance") {
+                const distKey = distanceType === "euclidean" ? "euclidean_distance" : "network_distance";
+                return transformValue(microData[cat]?.[distKey] || 0);
+              }
+              return transformValue(value);
             }),
             name: "Microcensus",
             marker: { color: DATASET_COLORS.Microcensus },
             text: categories.map((cat) => {
-              const value = microData[cat] || (filterType === "distance" && microData[cat] ? microData[cat] : 0);
-              return (filterType === "distance" ? transformValue(microData[cat]?.euclidean_distance || microData[cat]?.network_distance || 0) : transformValue(value)).toFixed(dataTransform ? 1 : 2);
+              const value = microData[cat] || 0;
+              if (filterType === "distance") {
+                const distKey = distanceType === "euclidean" ? "euclidean_distance" : "network_distance";
+                return transformValue(microData[cat]?.[distKey] || 0).toFixed(dataTransform ? 1 : 2);
+              }
+              return transformValue(value).toFixed(dataTransform ? 1 : 2);
             }),
             textposition: "auto",
           },
@@ -136,14 +144,22 @@ const DistributionBarPlot = ({
             type: "bar",
             x: xLabels,
             y: categories.map((cat) => {
-              const value = synData[cat] || (filterType === "distance" && synData[cat] ? synData[cat] : 0);
-              return filterType === "distance" ? transformValue(synData[cat]?.euclidean_distance || synData[cat]?.network_distance || 0) : transformValue(value);
+              const value = synData[cat] || 0;
+              if (filterType === "distance") {
+                const distKey = distanceType === "euclidean" ? "euclidean_distance" : "network_distance";
+                return transformValue(synData[cat]?.[distKey] || 0);
+              }
+              return transformValue(value);
             }),
             name: "Synthetic",
             marker: { color: DATASET_COLORS.Synthetic },
             text: categories.map((cat) => {
-              const value = synData[cat] || (filterType === "distance" && synData[cat] ? synData[cat] : 0);
-              return (filterType === "distance" ? transformValue(synData[cat]?.euclidean_distance || synData[cat]?.network_distance || 0) : transformValue(value)).toFixed(dataTransform ? 1 : 2);
+              const value = synData[cat] || 0;
+              if (filterType === "distance") {
+                const distKey = distanceType === "euclidean" ? "euclidean_distance" : "network_distance";
+                return transformValue(synData[cat]?.[distKey] || 0).toFixed(dataTransform ? 1 : 2);
+              }
+              return transformValue(value).toFixed(dataTransform ? 1 : 2);
             }),
             textposition: "auto",
           },
